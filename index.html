@@ -1,0 +1,311 @@
+  <!DOCTYPE html>
+  <html lang="ar" dir="rtl">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>فوازير رمضان</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+      <script src="https://unpkg.com/lucide@latest"></script>
+      <script src="shared.js"></script>
+      <style>
+          @keyframes float {
+              0% { transform: translateY(0px); }
+              50% { transform: translateY(-20px); }
+              100% { transform: translateY(0px); }
+          }
+          .floating-moon {
+              animation: float 6s ease-in-out infinite;
+          }
+      </style>
+  </head>
+  <body class="bg-gradient-to-b from-slate-900 to-slate-800 min-h-screen font-[Tajawal]">
+      <!-- Header -->
+      <header class="text-center py-6">
+          <h1 class="text-3xl font-bold text-white mb-2">فوازير رمضان</h1>
+          <div class="text-yellow-400" id="current-date"></div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="container mx-auto px-4">
+          <!-- Welcome Screen -->
+          <div id="welcome-screen" class="min-h-[calc(100vh-200px)] flex items-center justify-center">
+              <div class="text-center text-white p-8 bg-white/10 backdrop-blur-lg rounded-xl border-2 border-yellow-400/20 max-w-lg w-full">
+                  <div class="relative h-32 mb-6">
+                      <div class="floating-moon">
+                          <i data-lucide="moon-star" class="w-24 h-24 mx-auto text-yellow-400"></i>
+                      </div>
+                  </div>
+                  <h2 class="text-2xl font-bold mb-6" id="quiz-status-message">جاري التحقق من وقت المسابقة...</h2>
+                  <div class="mb-6">
+                      <input type="text" 
+                             id="player-name" 
+                             placeholder="أدخل اسمك" 
+                             class="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-yellow-400/20 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
+                             maxlength="20">
+                  </div>
+                  <button id="start-quiz" 
+                          class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 rounded-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled>
+                      بدء مسابقة اليوم
+                  </button>
+              </div>
+          </div>
+
+          <!-- Quiz Screen -->
+          <div id="quiz-screen" class="hidden min-h-[calc(100vh-200px)] flex items-center justify-center">
+              <div class="text-white p-8 bg-white/10 backdrop-blur-lg rounded-xl border-2 border-yellow-400/20 max-w-2xl w-full">
+                  <div class="text-center mb-6">
+                      <div class="text-lg text-yellow-400 mb-2" id="question-number">السؤال 1 من 3</div>
+                      <div class="text-xl font-bold" id="timer">10</div>
+                      <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
+                          <div id="timer-progress" class="bg-yellow-400 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                      </div>
+                  </div>
+                  <div class="text-2xl font-bold mb-6 text-center" id="question-text"></div>
+                  <div class="grid grid-cols-1 gap-4" id="answers-container"></div>
+              </div>
+          </div>
+
+          <!-- Results Screen -->
+          <div id="results-screen" class="hidden min-h-[calc(100vh-200px)] flex items-center justify-center">
+              <div class="text-white p-8 bg-white/10 backdrop-blur-lg rounded-xl border-2 border-yellow-400/20 max-w-2xl w-full">
+                  <div class="text-center mb-8">
+                      <div class="floating-moon mb-4">
+                          <i data-lucide="trophy" class="w-24 h-24 mx-auto text-yellow-400"></i>
+                      </div>
+                      <h2 class="text-3xl font-bold text-yellow-400">النتيجة النهائية</h2>
+                      <div class="text-2xl mt-4" id="final-score"></div>
+                  </div>
+                  <div id="answers-review" class="mb-8"></div>
+                  <div class="flex gap-4">
+                      <button onclick="location.reload()" 
+                              class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-4 rounded-xl text-lg">
+                          حاول مرة أخرى
+                      </button>
+                      <button onclick="checkAndRedirectToLeaderboard()" 
+                              class="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white py-4 rounded-xl text-lg">
+                          قائمة المتصدرين
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </main>
+
+      <script>
+          // Initialize Lucide icons
+          lucide.createIcons();
+
+          // Quiz Configuration
+          const questions = [
+              {
+                  question: "ما هو أول شهر في التقويم الهجري؟",
+                  answers: ["محرم", "رمضان", "شوال", "رجب"],
+                  correct: 0
+              },
+              {
+                  question: "كم عدد ركعات صلاة التراويح؟",
+                  answers: ["8 ركعات", "20 ركعة", "12 ركعة", "6 ركعات"],
+                  correct: 1
+              },
+              {
+                  question: "في أي ليلة من رمضان تُتحرى ليلة القدر؟",
+                  answers: ["ليلة 27", "ليلة 29", "ليلة 25", "ليلة 23"],
+                  correct: 0
+              }
+          ];
+
+          let currentQuestion = 0;
+          let score = 0;
+          let answers = [];
+          let timer;
+          let timeLeft;
+
+          document.addEventListener('DOMContentLoaded', () => {
+              updateQuizStatus();
+              setInterval(updateQuizStatus, 60000);
+
+              // Handle start button click
+              document.getElementById('start-quiz').addEventListener('click', () => {
+                  const playerName = document.getElementById('player-name').value.trim();
+                  if (validatePlayerName(playerName)) {
+                      startQuiz(playerName);
+                  }
+              });
+
+              // Update current date
+              updateCurrentDate();
+          });
+
+          function updateQuizStatus() {
+              const quizTime = isQuizTime();
+              const startButton = document.getElementById('start-quiz');
+              const statusMessage = document.getElementById('quiz-status-message');
+
+              if (quizTime) {
+                  statusMessage.textContent = "المسابقة متاحة الآن!";
+                  startButton.disabled = false;
+              } else {
+                  const nextQuizTime = getNextQuizTime();
+                  statusMessage.textContent = `المسابقة متوقفة حالياً. تبدأ بعد ${nextQuizTime}`;
+                  startButton.disabled = true;
+              }
+          }
+
+          function startQuiz(playerName) {
+              document.getElementById('welcome-screen').classList.add('hidden');
+              document.getElementById('quiz-screen').classList.remove('hidden');
+              
+              // Start countdown
+              showCountdown(() => {
+                  showQuestion();
+              });
+          }
+
+          function showCountdown(callback) {
+              let count = 5;
+              const messages = [
+                  "استعد التحدي سيبدأ! 🔥",
+                  "ركّز، الفرصة أمامك! 🚀",
+                  "لحظات للحسم، لا تتردد! ⚡️",
+                  "كن الأسرع، كن الأذكى! 🏆",
+                  "الآن… أطلق إبداعك! 🎯"
+              ];
+
+              const questionText = document.getElementById('question-text');
+              const answersContainer = document.getElementById('answers-container');
+              answersContainer.innerHTML = '';
+
+              const countInterval = setInterval(() => {
+                  if (count > 0) {
+                      questionText.innerHTML = `
+                          <div class="text-6xl font-bold text-yellow-400 mb-4">${count}</div>
+                          <div class="text-xl">${messages[5-count]}</div>
+                      `;
+                      count--;
+                  } else {
+                      clearInterval(countInterval);
+                      callback();
+                  }
+              }, 1000);
+          }
+
+          function showQuestion() {
+              if (currentQuestion >= questions.length) {
+                  showResults();
+                  return;
+              }
+
+              const question = questions[currentQuestion];
+              document.getElementById('question-number').textContent = `السؤال ${currentQuestion + 1} من ${questions.length}`;
+              document.getElementById('question-text').textContent = question.question;
+
+              const answersContainer = document.getElementById('answers-container');
+              answersContainer.innerHTML = '';
+
+              question.answers.forEach((answer, index) => {
+                  const button = document.createElement('button');
+                  button.className = 'bg-white/20 hover:bg-white/30 p-4 rounded-xl text-lg transition-colors';
+                  button.textContent = answer;
+                  button.onclick = () => submitAnswer(index);
+                  answersContainer.appendChild(button);
+              });
+
+              startTimer();
+          }
+
+          function startTimer() {
+              timeLeft = 10;
+              updateTimer();
+              timer = setInterval(() => {
+                  timeLeft--;
+                  updateTimer();
+                  if (timeLeft <= 0) {
+                      clearInterval(timer);
+                      submitAnswer(-1); // Time's up
+                  }
+              }, 1000);
+          }
+
+          function updateTimer() {
+              document.getElementById('timer').textContent = timeLeft;
+              const progress = (timeLeft / 10) * 100;
+              document.getElementById('timer-progress').style.width = `${progress}%`;
+          }
+
+          function submitAnswer(answerIndex) {
+              clearInterval(timer);
+              const question = questions[currentQuestion];
+              const isCorrect = answerIndex === question.correct;
+              const timeSpent = 10 - timeLeft;
+
+              // Calculate score based on time
+              let pointsEarned = 0;
+              if (isCorrect) {
+                  if (timeSpent <= 1) pointsEarned = 1000;
+                  else if (timeSpent <= 3) pointsEarned = 800;
+                  else if (timeSpent <= 5) pointsEarned = 500;
+                  else if (timeSpent <= 7) pointsEarned = 200;
+                  else pointsEarned = 100;
+              }
+
+              score += pointsEarned;
+              answers.push({
+                  questionIndex: currentQuestion,
+                  answerIndex: answerIndex,
+                  isCorrect: isCorrect,
+                  timeSpent: timeSpent,
+                  pointsEarned: pointsEarned
+              });
+
+              // Highlight correct/wrong answers
+              const buttons = document.querySelectorAll('#answers-container button');
+              buttons.forEach((button, index) => {
+                  button.disabled = true;
+                  if (index === question.correct) {
+                      button.classList.add('bg-green-600');
+                  } else if (index === answerIndex && !isCorrect) {
+                      button.classList.add('bg-red-600');
+                  }
+              });
+
+              // Move to next question after delay
+              setTimeout(() => {
+                  currentQuestion++;
+                  showQuestion();
+              }, 2000);
+          }
+
+          function showResults() {
+              document.getElementById('quiz-screen').classList.add('hidden');
+              document.getElementById('results-screen').classList.remove('hidden');
+
+              const finalScore = document.getElementById('final-score');
+              finalScore.textContent = `مجموع النقاط: ${score}`;
+
+              const reviewContainer = document.getElementById('answers-review');
+              reviewContainer.innerHTML = answers.map((answer, index) => `
+                  <div class="mb-4 p-4 ${answer.isCorrect ? 'bg-green-900/20' : 'bg-red-900/20'} rounded-lg">
+                      <div class="font-bold mb-2">السؤال ${index + 1}</div>
+                      <div class="text-sm">
+                          <div>الإجابة: ${answer.answerIndex === -1 ? 'لم يتم الإجابة' : questions[index].answers[answer.answerIndex]}</div>
+                          <div>الإجابة الصحيحة: ${questions[index].answers[questions[index].correct]}</div>
+                          <div>الوقت المستغرق: ${answer.timeSpent} ثواني</div>
+                          <div>النقاط: ${answer.pointsEarned}</div>
+                      </div>
+                  </div>
+              `).join('');
+          }
+
+          // New function to check leaderboard access
+          function checkAndRedirectToLeaderboard() {
+              const status = getLeaderboardStatus();
+              if (!status.canView) {
+                  alert(`${status.message}\n${status.timeMessage}`);
+                  return;
+              }
+              window.location.href = 'leaderboard.html';
+          }
+      </script>
+  </body>
+  </html>
