@@ -1,0 +1,211 @@
+  <!DOCTYPE html>
+  <html lang="ar" dir="rtl">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>قائمة المتصدرين - فوازير رمضان</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+      <script src="https://unpkg.com/lucide@latest"></script>
+      <script src="shared.js"></script>
+      <style>
+          @keyframes float {
+              0% { transform: translateY(0px); }
+              50% { transform: translateY(-20px); }
+              100% { transform: translateY(0px); }
+          }
+          .floating-moon {
+              animation: float 6s ease-in-out infinite;
+          }
+          .shine {
+              background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+              background-size: 200% 100%;
+              animation: shine 2s infinite;
+          }
+          @keyframes shine {
+              0% { background-position: -200% 0; }
+              100% { background-position: 200% 0; }
+          }
+      </style>
+  </head>
+  <body class="bg-gradient-to-b from-slate-900 to-slate-800 min-h-screen font-[Tajawal]">
+      <!-- Header -->
+      <header class="text-center py-6">
+          <h1 class="text-3xl font-bold text-white mb-2">قائمة المتصدرين</h1>
+          <div class="text-yellow-400" id="current-date"></div>
+      </header>
+
+      <!-- Main Content -->
+      <main id="main-content" class="container mx-auto px-4 pb-8">
+          <div class="max-w-4xl mx-auto">
+              <!-- Top 3 Winners (Will be shown only after 8 PM) -->
+              <div id="top-winners" class="grid grid-cols-3 gap-4 mb-8">
+                  <!-- 2nd Place -->
+                  <div class="order-1">
+                      <div class="text-center">
+                          <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-b from-gray-300 to-gray-400 flex items-center justify-center">
+                              <i data-lucide="medal" class="w-12 h-12 text-white"></i>
+                          </div>
+                          <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4">
+                              <div class="text-gray-300 font-bold">المركز الثاني</div>
+                              <div class="text-white text-lg" id="second-place-name">-</div>
+                              <div class="text-yellow-400" id="second-place-score">-</div>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <!-- 1st Place -->
+                  <div class="order-0">
+                      <div class="text-center">
+                          <div class="w-32 h-32 mx-auto mb-4 rounded-full bg-gradient-to-b from-yellow-400 to-yellow-600 flex items-center justify-center">
+                              <i data-lucide="crown" class="w-16 h-16 text-white"></i>
+                          </div>
+                          <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4 border-2 border-yellow-400/20">
+                              <div class="text-yellow-400 font-bold">المركز الأول</div>
+                              <div class="text-white text-xl" id="first-place-name">-</div>
+                              <div class="text-yellow-400 text-lg" id="first-place-score">-</div>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <!-- 3rd Place -->
+                  <div class="order-2">
+                      <div class="text-center">
+                          <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-b from-amber-600 to-amber-700 flex items-center justify-center">
+                              <i data-lucide="medal" class="w-12 h-12 text-white"></i>
+                          </div>
+                          <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4">
+                              <div class="text-amber-600 font-bold">المركز الثالث</div>
+                              <div class="text-white text-lg" id="third-place-name">-</div>
+                              <div class="text-yellow-400" id="third-place-score">-</div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Full Leaderboard -->
+              <div class="bg-white/10 backdrop-blur-lg rounded-xl border-2 border-yellow-400/20">
+                  <div class="p-4 border-b border-yellow-400/20">
+                      <h2 class="text-xl font-bold text-white">جميع المتسابقين</h2>
+                  </div>
+                  <div id="leaderboard-list" class="divide-y divide-yellow-400/10">
+                      <!-- Leaderboard entries will be inserted here -->
+                  </div>
+              </div>
+
+              <!-- Back Button -->
+              <div class="text-center mt-8">
+                  <button onclick="window.location.href='index.html'" 
+                          class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 rounded-xl text-lg inline-flex items-center gap-2">
+                      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                      العودة للمسابقة
+                  </button>
+              </div>
+          </div>
+      </main>
+
+      <script>
+          // Initialize Lucide icons
+          lucide.createIcons();
+
+          document.addEventListener('DOMContentLoaded', () => {
+              const status = getLeaderboardStatus();
+              
+              if (!status.canView) {
+                  showLeaderboardLockedMessage(status);
+                  // Update countdown every second
+                  setInterval(updateCountdown, 1000);
+                  return;
+              }
+              
+              updateLeaderboard();
+              // Update leaderboard every 30 seconds
+              setInterval(updateLeaderboard, 30000);
+          });
+
+          function showLeaderboardLockedMessage(status) {
+              document.getElementById('main-content').innerHTML = `
+                  <div class="min-h-[calc(100vh-64px)] flex items-center justify-center">
+                      <div class="text-center text-white p-8 bg-white/10 backdrop-blur-lg rounded-xl border-2 border-yellow-400/20 max-w-lg w-full">
+                          <div class="relative h-32 mb-6">
+                              <div class="floating-moon">
+                                  <i data-lucide="lock" class="w-20 h-20 mx-auto text-yellow-400"></i>
+                              </div>
+                          </div>
+                          <h1 class="text-3xl font-bold text-yellow-400 mb-4">${status.message}</h1>
+                          <p class="mb-4 text-lg">${status.subMessage}</p>
+                          <div class="text-2xl font-bold text-green-400 mb-6" id="countdown-timer">
+                              ${status.timeMessage}
+                          </div>
+                          <button
+                              onclick="window.location.href='index.html'"
+                              class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 rounded-xl text-lg inline-flex items-center gap-2"
+                          >
+                              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                              العودة للمسابقة
+                          </button>
+                      </div>
+                  </div>
+              `;
+              lucide.createIcons();
+          }
+
+          function updateCountdown() {
+              const timeUntil = getTimeUntilLeaderboard();
+              const countdownElement = document.getElementById('countdown-timer');
+              
+              if (timeUntil.diff <= 0) {
+                  // Reload page when time is up
+                  location.reload();
+                  return;
+              }
+              
+              countdownElement.textContent = `سيتم عرض النتائج بعد ${timeUntil.formatted}`;
+          }
+
+          function updateLeaderboard() {
+              // Simulate leaderboard data (replace with actual data fetching)
+              const leaderboardData = [
+                  { name: "أحمد", score: 2800 },
+                  { name: "فاطمة", score: 2600 },
+                  { name: "محمد", score: 2400 },
+                  { name: "نورة", score: 2200 },
+                  { name: "عبدالله", score: 2000 },
+                  { name: "سارة", score: 1800 },
+                  { name: "خالد", score: 1600 },
+                  { name: "ريم", score: 1400 },
+                  { name: "عمر", score: 1200 },
+                  { name: "لينا", score: 1000 }
+              ];
+
+              // Update top 3
+              if (leaderboardData.length > 0) {
+                  document.getElementById('first-place-name').textContent = leaderboardData[0].name;
+                  document.getElementById('first-place-score').textContent = leaderboardData[0].score;
+              }
+              if (leaderboardData.length > 1) {
+                  document.getElementById('second-place-name').textContent = leaderboardData[1].name;
+                  document.getElementById('second-place-score').textContent = leaderboardData[1].score;
+              }
+              if (leaderboardData.length > 2) {
+                  document.getElementById('third-place-name').textContent = leaderboardData[2].name;
+                  document.getElementById('third-place-score').textContent = leaderboardData[2].score;
+              }
+
+              // Update full leaderboard
+              const leaderboardList = document.getElementById('leaderboard-list');
+              leaderboardList.innerHTML = leaderboardData.map((player, index) => `
+                  <div class="p-4 flex items-center gap-4 ${index < 3 ? 'shine' : ''}">
+                      <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-yellow-400 font-bold">
+                          ${index + 1}
+                      </div>
+                      <div class="flex-1">
+                          <div class="text-white font-bold">${player.name}</div>
+                          <div class="text-yellow-400">${player.score} نقطة</div>
+                      </div>
+                  </div>
+              `).join('');
+          }
+      </script>
+  </body>
+  </html>
